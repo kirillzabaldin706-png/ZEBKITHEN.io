@@ -1,0 +1,207 @@
+<!-- 2. Меню -->
+  <section id="menu" class="container">
+    <h2>Меню ZEB Kitchen</h2>
+    <p>Мы готовим только из свежих, локальных продуктов. Каждое блюдо — результат работы нашей команды и уважения к вкусу.</p>
+
+    <div class="category-tabs">
+      <div class="tab active" data-category="starters">Закуски</div>
+      <div class="tab" data-category="mains">Основные</div>
+      <div class="tab" data-category="desserts">Десерты</div>
+      <div class="tab" data-category="drinks">Напитки</div>
+    </div>
+
+    <!-- Закуски -->
+    <div class="menu-category active" id="starters">
+      <h3>Закуски от шефа</h3>
+      <div class="dish">
+        <img src="images/bruschetta.jpg" alt="Брускетта с авокадо">
+        <div class="dish-info">
+          <h4>Брускетта с авокадо и креветкой</h4>
+          <p>Свежий хлеб, домашний авокадо-крем, тигровая креветка</p>
+          <strong>590 ₽</strong><br><br>
+          <button class="cta-button" style="padding:0.4rem 1rem; font-size:0.9rem;" 
+                  onclick="addToCart('Брускетта с авокадо и креветкой', 590)">
+            В корзину
+          </button>
+        </div>
+      </div>
+      <div class="dish">
+        <img src="images/main.jpg" alt="Тартар из говядины">
+        <div class="dish-info">
+          <h4>Тартар из говядины с соусом «Маттака»</h4>
+          <p>Мясо выдержанное, соус из японского майонеза, васаби и кунжута</p>
+          <strong>750 ₽</strong><br><br>
+          <button class="cta-button" style="padding:0.4rem 1rem; font-size:0.9rem;" 
+                  onclick="addToCart('Тартар из говядины с соусом «Маттака»', 750)">
+            В корзину
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Основные -->
+    <div class="menu-category" id="mains">
+      <h3>Основные блюда</h3>
+      <div class="dish">
+        <img src="images/min.jpg" alt="Форель на гриле с овощами">
+        <div class="dish-info">
+          <h4>Форель на гриле с сезонными овощами</h4>
+          <p>Свежая форель, запечённые овощи, соус из цитрусов</p>
+          <strong>1290 ₽</strong><br><br>
+          <button class="cta-button" style="padding:0.4rem 1rem; font-size:0.9rem;" 
+                  onclick="addToCart('Форель на гриле с сезонными овощами', 1290)">
+            В корзину
+          </button>
+        </div>
+      </div>
+      <div class="dish">
+        <img src="images/man.jpg" alt="Стейк рибай">
+        <div class="dish-info">
+          <h4>Стейк из говядины «Рибай»</h4>
+          <p>Выдержанный стейк, картофельное пюре, красное вино-соус</p>
+          <strong>1890 ₽</strong><br><br>
+          <button class="cta-button" style="padding:0.4rem 1rem; font-size:0.9rem;" 
+                  onclick="addToCart('Стейк из говядины «Рибай»', 1890)">
+            В корзину
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Десерты -->
+    <div class="menu-category" id="desserts">
+      <h3>Авторские десерты</h3>
+      <div class="dish">
+        <img src="images/sin.jpg" alt="Тирамису">
+        <div class="dish-info">
+          <h4>Классическое тирамису</h4>
+          <p>Маскарпоне, эспрессо, какао, печенье «Савоярди»</p>
+          <strong>490 ₽</strong><br><br>
+          <button class="cta-button" style="padding:0.4rem 1rem; font-size:0.9rem;" 
+                  onclick="addToCart('Классическое тирамису', 490)">
+            В корзину
+          </button>
+        </div>
+      </div>
+      <div class="dish">
+        <img src="images/san.jpg" alt="Чизкейк">
+        <div class="dish-info">
+          <h4>Нью-Йорк чизкейк с ягодным соусом</h4>
+          <p>Плотный сырный корж, свежие ягоды, домашний соус</p>
+          <strong>550 ₽</strong><br><br>
+          <button class="cta-button" style="padding:0.4rem 1rem; font-size:0.9rem;" 
+                  onclick="addToCart('Нью-Йорк чизкейк с ягодным соусом', 550)">
+            В корзину
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Напитки -->
+    <div class="menu-category" id="drinks">
+      <h3>Напитки & крафт</h3>
+      <div class="dish">
+        <img src="images/vin.jpg" alt="Кофе">
+        <div class="dish-info">
+          <h4>Авторский кофе от местной обжарки</h4>
+          <p>Эфиопия, Йиргачеффе, фильтр или эспрессо</p>
+          <strong>350 ₽</strong><br><br>
+          <button class="cta-button" style="padding:0.4rem 1rem; font-size:0.9rem;" 
+                  onclick="addToCart('Авторский кофе от местной обжарки', 350)">
+            В корзину
+          </button>
+        </div>
+      </div>
+      <div class="dish">
+        <img src="images/van.jpg" alt="Коктейль">
+        <div class="dish-info">
+          <h4>Коктейль «Цитрус & Травы»</h4>
+          <p>Джин, лайм, базилик, медовый сироп, тоник</p>
+          <strong>650 ₽</strong><br><br>
+          <button class="cta-button" style="padding:0.4rem 1rem; font-size:0.9rem;" 
+                  onclick="addToCart('Коктейль «Цитрус & Травы»', 650)">
+            В корзину
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. О ресторане -->
+  <section id="about" class="container">
+    <h2>История ZEB Kitchen</h2>
+    <div class="about-grid">
+      <div class="about-item">
+        <h3>Наша философия</h3>
+        <p>Открытие ZEB Kitchen в 2025 году стало ответом на запрос гостей на честную, вкусную и осознанную еду. Мы не используем полуфабрикаты, консерванты или искусственные добавки.</p>
+      </div>
+      <div class="about-item">
+        <h3>Команда</h3>
+        <div class="team-member">
+          <div class="team-photo">
+            <img src="images/ban.jpg" alt="Шеф-повар">
+          </div>
+          <div>
+            <strong>Алексей Петров</strong><br>
+            Шеф-повар с 12-летним опытом
+          </div>
+        </div>
+        <div class="team-member">
+          <div class="team-photo">
+            <img src="images/big.jpg" alt="Управляющий">
+          </div>
+          <div>
+            <strong>Екатерина Смирнова</strong><br>
+            Управляющая и создательница концепции
+          </div>
+        </div>
+      </div>
+      <div class="about-item">
+        <h3>Интерьер</h3>
+        <img src="images/aaa.jpg" alt="Интерьер ZEB Kitchen" style="width:100%;border-radius:8px;">
+        <p>Пространство создано для встреч: дерево, мягкий свет, открытая кухня и зона у окна с видом на город.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Бронирование столов -->
+  <section id="booking" class="container">
+    <h2>Забронируйте стол в ZEB Kitchen</h2>
+    <div class="booking-form">
+      <form id="bookingForm">
+        <div class="form-group">
+          <label for="name">Имя</label>
+          <input type="text" id="name" required placeholder="Ваше имя">
+        </div>
+        <div class="form-group">
+          <label for="phone">Телефон</label>
+          <input type="tel" id="phone" required placeholder="+7 (999) 123-45-67">
+        </div>
+        <div class="form-group">
+          <label for="date">Дата</label>
+          <input type="date" id="date" required>
+        </div>
+        <div class="form-group">
+          <label for="time">Время</label>
+          <select id="time" required>
+            <option value="">Выберите время</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="guests">Количество гостей</label>
+          <select id="guests" required>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5+">5 и более</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="comment">Комментарий (опционально)</label>
+          <textarea id="comment" rows="3" placeholder="Особые пожелания"></textarea>
+        </div>
+        <button type="submit" class="cta-button">Забронировать</button>
+      </form>
+    </div>
+  </section>

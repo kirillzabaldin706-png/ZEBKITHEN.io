@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Админ-панель — ZEB Kitchen</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK (compat — без import/export, работает из file://) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Lato',sans-serif;background:linear-gradient(to bottom,#f9f7f4,#fff);color:#222}
+.wrap{width:90%;max-width:1200px;margin:0 auto;padding:0 15px}
+header{background:linear-gradient(135deg,#222,#3a3a3a);color:#f5f0e6;padding:18px 0;border-bottom:3px solid #d4a574}
+header .wrap{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.logo h1{font-family:'Playfair Display',serif;font-size:24px;color:#d4a574}
+.logo p{font-size:13px;opacity:.85}
+nav a{color:#d4a574;text-decoration:none;font-size:15px;font-weight:600}
+nav a:hover{color:#e8c090}
+.btn-out{background:rgba(212,165,116,.15);border:1px solid #d4a574;color:#d4a574;padding:8px 18px;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer}
+.btn-out:hover{background:#d4a574;color:#222}
+#login-screen{min-height:calc(100vh - 70px);display:flex;align-items:center;justify-content:center;padding:30px 15px}
+.login-box{background:#fff;border-radius:20px;padding:48px 40px;width:100%;max-width:400px;box-shadow:0 10px 40px rgba(0,0,0,.1);text-align:center;border:1px solid #e0d8d0}
+.login-box .icon{font-size:52px;margin-bottom:14px}
+.login-box h2{font-family:'Playfair Display',serif;font-size:24px;margin-bottom:6px}
+.login-box p{color:#999;font-size:14px;margin-bottom:26px}
+.login-box input{width:100%;padding:12px 14px;border:2px solid #e0d8d0;border-radius:10px;font-size:15px;margin-bottom:12px;font-family:'Lato',sans-serif;outline:none}
+.login-box input:focus{border-color:#d4a574}
+.login-err{color:#c0392b;font-size:14px;margin-bottom:10px;display:none}
+.btn-login{width:100%;padding:13px;background:#d4a574;color:#fff;border:none;border-radius:30px;font-size:16px;font-weight:700;cursor:pointer}
+.btn-login:hover{background:#c18e55}
+#admin-screen{display:none}
+.admin-wrap{max-width:1100px;margin:0 auto;padding:28px 15px}
+.banner{background:linear-gradient(135deg,#222,#3a3a3a);color:#f5f0e6;padding:26px 32px;border-radius:14px;margin-bottom:26px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;border-left:4px solid #d4a574}
+.banner h1{font-family:'Playfair Display',serif;font-size:22px;color:#d4a574}
+.banner p{opacity:.8;font-size:13px;margin-top:3px}
+.banner a{color:#d4a574;text-decoration:none;font-size:14px;font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:24px}
+.stat{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.07);text-align:center;border:1px solid #e0d8d0}
+.stat .num{font-size:30px;font-weight:700;color:#d4a574;font-family:'Playfair Display',serif}
+.stat .lbl{color:#999;font-size:13px;margin-top:3px}
+.tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.tab{padding:9px 18px;border:2px solid #e0d8d0;border-radius:22px;background:#fff;cursor:pointer;font-size:14px;font-weight:600;color:#666}
+.tab.active{border-color:#d4a574;color:#d4a574;background:#fff9f3}
+.panel{display:none}.panel.active{display:block}
+.card{background:#fff;border-radius:14px;padding:26px;box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:18px;border:1px solid #e0d8d0}
+.card h3{font-family:'Playfair Display',serif;font-size:17px;margin-bottom:18px;padding-bottom:12px;border-bottom:2px solid #f0ebe3}
+table{width:100%;border-collapse:collapse}
+th{background:#faf9f7;padding:11px 13px;text-align:left;font-size:13px;color:#666;border-bottom:2px solid #e0d8d0}
+td{padding:11px 13px;border-bottom:1px solid #f0ebe3;vertical-align:middle;font-size:14px}
+tr:hover td{background:#fff9f3}
+.tag{display:inline-block;background:#fff9f3;color:#d4a574;padding:3px 10px;border-radius:18px;font-size:12px;border:1px solid #e6d3b3}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px}
+.fr.full{grid-template-columns:1fr}
+.fl label{display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:4px}
+.fl input,.fl select,.fl textarea{width:100%;padding:9px 12px;border:2px solid #e0d8d0;border-radius:8px;font-size:14px;font-family:'Lato',sans-serif;outline:none}
+.fl input:focus,.fl select:focus,.fl textarea:focus{border-color:#d4a574}
+.fl textarea{min-height:65px;resize:vertical}
+.btn-edit{background:#d4a574;color:#fff;border:none;padding:5px 11px;border-radius:6px;cursor:pointer;font-size:12px;margin-right:3px}
+.btn-del{background:#c0392b;color:#fff;border:none;padding:5px 11px;border-radius:6px;cursor:pointer;font-size:12px}
+.btn-primary{background:#d4a574;color:#fff;padding:10px 26px;border-radius:30px;border:none;cursor:pointer;font-size:14px;font-weight:600}
+.btn-primary:hover{background:#c18e55}
+.upbtn{cursor:pointer;padding:8px 13px;background:#d4a574;color:#fff;border-radius:8px;font-size:13px;font-weight:600;display:inline-block}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:.2s}
+.modal-bg.open{opacity:1;pointer-events:all}
+.modal{background:#fff;border-radius:18px;max-width:540px;width:100%;padding:30px;max-height:90vh;overflow-y:auto;border:1px solid #e0d8d0}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.modal-head h2{font-family:'Playfair Display',serif;font-size:19px}
+.modal-close{background:none;border:none;font-size:24px;cursor:pointer;color:#999}
+.ok{color:#27ae60;font-size:14px;margin-top:8px;display:none}
+.err{color:#c0392b;font-size:14px;margin-top:8px;display:none}
+.info{background:#fff9f3;border:1px solid #e6d3b3;border-radius:9px;padding:16px 20px;margin-top:16px}
+.info h4{color:#c18e55;margin-bottom:6px}.info p{color:#555;font-size:14px;line-height:1.6}
+.preview{margin-top:7px;display:none}
+.preview img{width:76px;height:76px;object-fit:cover;border-radius:8px;border:2px solid #d4a574}
+.status-new{background:#fff9f3;color:#d4a574;padding:3px 9px;border-radius:9px;font-size:12px;border:1px solid #e6d3b3}
+.status-paid{background:#e8f5e9;color:#2e7d32;padding:3px 9px;border-radius:9px;font-size:12px}
+.status-done{background:#f5f5f5;color:#777;padding:3px 9px;border-radius:9px;font-size:12px}
+.warn-box{background:#fff9f0;border:1px solid #f0d9b5;border-radius:9px;padding:14px 18px;font-size:13px;color:#8a6030;margin-bottom:16px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="logo"><h1>ZEB Kitchen</h1><p>Панель администратора</p></div>
+    <nav><a href="index.html">На сайт</a></nav>
+    <button class="btn-out" id="logoutBtn" style="display:none" onclick="doLogout()">Выйти</button>
+  </div>
+</header>
+
+<div id="login-screen">
+  <div class="login-box">
+    <div class="icon">🔐</div>
+    <h2>Вход в панель</h2>
+    <p>Ресторан ZEB Kitchen</p>
+    <div class="login-err" id="login-err">Неверный логин или пароль</div>
+    <input type="text" id="lu" placeholder="Логин" autocomplete="username" value="admin">
+    <input type="password" id="lp" placeholder="Пароль" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn-login" onclick="doLogin()">Войти</button>
+  </div>
+</div>
+
+<div id="admin-screen">
+  <div class="admin-wrap">
+    <div class="banner">
+      <div><h1>Панель управления</h1><p>Меню, бронирования и заказы • Firebase Firestore</p></div>
+      <a href="index.html">Перейти на сайт →</a>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('menu',this)">📋 Меню</button>
+      <button class="tab" onclick="switchTab('add',this)">➕ Добавить блюдо</button>
+      <button class="tab" onclick="switchTab('cats',this)">🗂 Категории</button>
+      <button class="tab" onclick="switchTab('bookings',this)">📅 Бронирования</button>
+      <button class="tab" onclick="switchTab('orders',this)">🛒 Заказы</button>
+      <button class="tab" onclick="switchTab('photos',this)">🖼 Фото сайта</button>
+      <button class="tab" onclick="switchTab('pwd',this)">🔑 Пароль</button>
+    </div>
+
+    <!-- МЕНЮ -->
+    <div class="panel active" id="panel-menu">
+      <div class="card">
+        <h3>Все блюда</h3>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <input id="srch" type="text" placeholder="Поиск..." style="padding:8px 13px;border:2px solid #e0d8d0;border-radius:18px;font-size:14px;flex:1;min-width:160px;outline:none" oninput="renderTable()">
+          <select id="fcat" style="padding:8px 13px;border:2px solid #e0d8d0;border-radius:18px;font-size:14px;outline:none" onchange="renderTable()"><option value="">Все категории</option></select>
+        </div>
+        <div style="overflow-x:auto"><table><thead><tr><th>Фото</th><th>Название</th><th>Категория</th><th>Цена</th><th>Действия</th></tr></thead><tbody id="items-tb"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ДОБАВИТЬ БЛЮДО -->
+    <div class="panel" id="panel-add">
+      <div class="card">
+        <h3>Добавить блюдо</h3>
+        <div class="fr">
+          <div class="fl"><label>Название *</label><input id="an" placeholder="Стейк Рибай"></div>
+          <div class="fl"><label>Категория *</label><select id="ac"></select></div>
+        </div>
+        <div class="fr full">
+          <div class="fl"><label>Описание</label><textarea id="ad" placeholder="Состав и способ приготовления..."></textarea></div>
+        </div>
+        <div class="fr">
+          <div class="fl"><label>Цена (руб) *</label><input id="ap" type="number" placeholder="890" min="0"></div>
+          <div class="fl">
+            <label>Фото блюда</label>
+            <div style="display:flex;gap:7px;align-items:center">
+              <input id="ai" placeholder="Ссылка появится после загрузки" style="flex:1">
+              <label for="aif" class="upbtn" id="aubtn">📷 Загрузить</label>
+              <input type="file" id="aif" accept="image/*" style="display:none" onchange="uploadImg(this,'ai','aubtn','aprev')">
+            </div>
+            <div class="preview" id="aprev"><img id="athumb" src="" alt=""></div>
+          </div>
+        </div>
+        <button class="btn-primary" style="margin-top:8px" onclick="addItem()">✓ Добавить блюдо</button>
+        <div class="ok" id="add-ok">Блюдо добавлено!</div>
+      </div>
+    </div>
+
+    <!-- КАТЕГОРИИ -->
+    <div class="panel" id="panel-cats">
+      <div class="card">
+        <h3>Категории</h3>
+        <div id="cats-list"></div>
+        <hr style="margin:20px 0;border-color:#eee">
+        <h3 style="border:none;margin-bottom:13px">Добавить категорию</h3>
+        <div class="fr">
+          <div class="fl"><label>ID (латиница, без пробелов)</label><input id="cid" placeholder="soups"></div>
+          <div class="fl"><label>Название на русском</label><input id="cname" placeholder="Супы"></div>
+        </div>
+        <button class="btn-primary" onclick="addCat()">Добавить</button>
+      </div>
+    </div>
+
+    <!-- БРОНИРОВАНИЯ -->
+    <div class="panel" id="panel-bookings">
+      <div class="card">
+        <h3>Бронирования столиков</h3>
+        <div id="bk-status" style="color:#d4a574;margin-bottom:12px;font-size:14px">Подключение к Firebase...</div>
+        <div style="overflow-x:auto"><table><thead><tr><th>Дата записи</th><th>Имя</th><th>Телефон</th><th>Email</th><th>Дата визита</th><th>Время</th><th>Гостей</th><th>Комментарий</th></tr></thead><tbody id="bk-tb"><tr><td colspan="8" style="text-align:center;color:#999">Загрузка...</td></tr></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ЗАКАЗЫ -->
+    <div class="panel" id="panel-orders">
+      <div class="card">
+        <h3>Заказы из корзины</h3>
+        <div id="ord-status" style="color:#d4a574;margin-bottom:12px;font-size:14px">Подключение к Firebase...</div>
+        <div style="overflow-x:auto"><table><thead><tr><th>Дата</th><th>Имя</th><th>Телефон</th><th>Тип / Оплата</th><th>Блюда</th><th>Сумма</th><th>Статус</th></tr></thead><tbody id="ord-tb"><tr><td colspan="7" style="text-align:center;color:#999">Загрузка...</td></tr></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ФОТО САЙТА -->
+    <div class="panel" id="panel-photos">
+      <div class="card">
+        <h3>Фотографии ресторана</h3>
+        <p style="color:#555;font-size:14px;margin-bottom:16px">Фото загружаются на <b>imgbb.com</b> и URL сохраняется в Firebase. После замены — обновите страницу сайта.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px">
+
+          <div style="background:#faf9f7;border-radius:12px;overflow:hidden;border:1px solid #e0d8d0">
+            <img id="ph-hero-prev" src="images/r.jpg" style="width:100%;height:140px;object-fit:cover;background:#f0ebe3" onerror="this.style.opacity=0.3">
+            <div style="padding:12px">
+              <b style="font-size:14px">Главная (Hero)</b>
+              <p style="font-size:12px;color:#888;margin:4px 0 10px">Фоновое изображение первого экрана</p>
+              <label style="display:block;width:100%;padding:8px;background:#d4a574;color:#fff;border-radius:8px;text-align:center;cursor:pointer;font-size:13px;font-weight:600">
+                📷 Заменить
+                <input type="file" accept="image/*" style="display:none" onchange="replacePhoto('hero',this,'ph-hero-prev')">
+              </label>
+            </div>
+          </div>
+
+          <div style="background:#faf9f7;border-radius:12px;overflow:hidden;border:1px solid #e0d8d0">
+            <img id="ph-interior-prev" src="images/aaa.jpg" style="width:100%;height:140px;object-fit:cover;background:#f0ebe3" onerror="this.style.opacity=0.3">
+            <div style="padding:12px">
+              <b style="font-size:14px">Интерьер</b>
+              <p style="font-size:12px;color:#888;margin:4px 0 10px">Фото в разделе «О нас»</p>
+              <label style="display:block;width:100%;padding:8px;background:#d4a574;color:#fff;border-radius:8px;text-align:center;cursor:pointer;font-size:13px;font-weight:600">
+                📷 Заменить
+                <input type="file" accept="image/*" style="display:none" onchange="replacePhoto('interior',this,'ph-interior-prev')">
+              </label>
+            </div>
+          </div>
+
+          <div style="background:#faf9f7;border-radius:12px;overflow:hidden;border:1px solid #e0d8d0">
+            <img id="ph-chef-prev" src="images/ban.jpg" style="width:100%;height:140px;object-fit:cover;background:#f0ebe3" onerror="this.style.opacity=0.3">
+            <div style="padding:12px">
+              <b style="font-size:14px">Шеф-повар</b>
+              <p style="font-size:12px;color:#888;margin:4px 0 10px">Алексей Петров</p>
+              <label style="display:block;width:100%;padding:8px;background:#d4a574;color:#fff;border-radius:8px;text-align:center;cursor:pointer;font-size:13px;font-weight:600">
+                📷 Заменить
+                <input type="file" accept="image/*" style="display:none" onchange="replacePhoto('chef',this,'ph-chef-prev')">
+              </label>
+            </div>
+          </div>
+
+          <div style="background:#faf9f7;border-radius:12px;overflow:hidden;border:1px solid #e0d8d0">
+            <img id="ph-manager-prev" src="images/big.jpg" style="width:100%;height:140px;object-fit:cover;background:#f0ebe3" onerror="this.style.opacity=0.3">
+            <div style="padding:12px">
+              <b style="font-size:14px">Управляющая</b>
+              <p style="font-size:12px;color:#888;margin:4px 0 10px">Екатерина Смирнова</p>
+              <label style="display:block;width:100%;padding:8px;background:#d4a574;color:#fff;border-radius:8px;text-align:center;cursor:pointer;font-size:13px;font-weight:600">
+                📷 Заменить
+                <input type="file" accept="image/*" style="display:none" onchange="replacePhoto('manager',this,'ph-manager-prev')">
+              </label>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ПАРОЛЬ -->
+    <div class="panel" id="panel-pwd">
+      <div class="card">
+        <h3>Смена пароля</h3>
+        <div class="fr full"><div class="fl"><label>Текущий пароль</label><input type="password" id="po" autocomplete="current-password"></div></div>
+        <div class="fr full"><div class="fl"><label>Новый пароль</label><input type="password" id="pn" autocomplete="new-password"></div></div>
+        <div class="fr full"><div class="fl"><label>Повторите новый</label><input type="password" id="pn2" autocomplete="new-password"></div></div>
+        <button class="btn-primary" style="margin-top:6px" onclick="changePwd()">Сменить пароль</button>
+        <div class="ok" id="pwd-ok">✓ Пароль изменён!</div>
+        <div class="err" id="pwd-err"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Модалка редактирования -->
+<div class="modal-bg" id="edit-bg" onclick="if(event.target===this)closeEdit()">
+  <div class="modal">
+    <div class="modal-head"><h2>Редактировать блюдо</h2><button class="modal-close" onclick="closeEdit()">×</button></div>
+    <div id="edit-form"></div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn-primary" style="flex:1" onclick="saveEdit()">💾 Сохранить</button>
+      <button onclick="closeEdit()" style="padding:10px 20px;border:2px solid #e0d8d0;border-radius:9px;background:#fff;cursor:pointer;font-size:14px">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// FIREBASE CONFIG
+// ═══════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: 'AIzaSyBlLgBGbd8vihc702chK780oJkzIo4jjgs',
+  authDomain: 'zeb-kitchen-5b864.firebaseapp.com',
+  projectId: 'zeb-kitchen-5b864',
+  storageBucket: 'zeb-kitchen-5b864.firebasestorage.app',
+  messagingSenderId: '383048754360',
+  appId: '1:383048754360:web:4bb660751446271fcf404d'
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ═══════════════════════════════════════════════════
+// IMGBB
+// ═══════════════════════════════════════════════════
+const IMGBB_API_KEY = '7211b469b211fbe8eddf7285042eb17d';
+
+// ═══════════════════════════════════════════════════
+// ПАРОЛЬ (MD5)
+// ═══════════════════════════════════════════════════
+const HASH_KEY = 'zeb_admin_hash';
+const USER_KEY = 'zeb_admin_user';
+// MD5 хэш пароля администратора
+const DEFAULT_HASH = '7211b469b211fbe8eddf7285042eb17d';
+
+function md5(str) {
+  function safeAdd(x,y){const l=(x&0xFFFF)+(y&0xFFFF);return(((x>>16)+(y>>16)+(l>>16))<<16)|(l&0xFFFF)}
+  function rol(n,c){return(n<<c)|(n>>>(32-c))}
+  function cmn(q,a,b,x,s,t){return safeAdd(rol(safeAdd(safeAdd(a,q),safeAdd(x,t)),s),b)}
+  function ff(a,b,c,d,x,s,t){return cmn((b&c)|((~b)&d),a,b,x,s,t)}
+  function gg(a,b,c,d,x,s,t){return cmn((b&d)|(c&(~d)),a,b,x,s,t)}
+  function hh(a,b,c,d,x,s,t){return cmn(b^c^d,a,b,x,s,t)}
+  function ii(a,b,c,d,x,s,t){return cmn(c^(b|(~d)),a,b,x,s,t)}
+  const m=[],l=str.length,st=[1732584193,-271733879,-1732584194,271733878];
+  for(let i=0;i<l;i++)m[i>>2]|=str.charCodeAt(i)<<((i%4)*8);
+  m[l>>2]|=0x80<<((l%4)*8);
+  m[(((l+8)>>6)<<4)+14]=l*8;
+  for(let i=0;i<m.length;i+=16){
+    const[a0,b0,c0,d0]=st;let[a,b,c,d]=st;
+    a=ff(a,b,c,d,m[i],7,-680876936);d=ff(d,a,b,c,m[i+1],12,-389564586);c=ff(c,d,a,b,m[i+2],17,606105819);b=ff(b,c,d,a,m[i+3],22,-1044525330);
+    a=ff(a,b,c,d,m[i+4],7,-176418897);d=ff(d,a,b,c,m[i+5],12,1200080426);c=ff(c,d,a,b,m[i+6],17,-1473231341);b=ff(b,c,d,a,m[i+7],22,-45705983);
+    a=ff(a,b,c,d,m[i+8],7,1770035416);d=ff(d,a,b,c,m[i+9],12,-1958414417);c=ff(c,d,a,b,m[i+10],17,-42063);b=ff(b,c,d,a,m[i+11],22,-1990404162);
+    a=ff(a,b,c,d,m[i+12],7,1804603682);d=ff(d,a,b,c,m[i+13],12,-40341101);c=ff(c,d,a,b,m[i+14],17,-1502002290);b=ff(b,c,d,a,m[i+15],22,1236535329);
+    a=gg(a,b,c,d,m[i+1],5,-165796510);d=gg(d,a,b,c,m[i+6],9,-1069501632);c=gg(c,d,a,b,m[i+11],14,643717713);b=gg(b,c,d,a,m[i],20,-373897302);
+    a=gg(a,b,c,d,m[i+5],5,-701558691);d=gg(d,a,b,c,m[i+10],9,38016083);c=gg(c,d,a,b,m[i+15],14,-660478335);b=gg(b,c,d,a,m[i+4],20,-405537848);
+    a=gg(a,b,c,d,m[i+9],5,568446438);d=gg(d,a,b,c,m[i+14],9,-1019803690);c=gg(c,d,a,b,m[i+3],14,-187363961);b=gg(b,c,d,a,m[i+8],20,1163531501);
+    a=gg(a,b,c,d,m[i+13],5,-1444681467);d=gg(d,a,b,c,m[i+2],9,-51403784);c=gg(c,d,a,b,m[i+7],14,1735328473);b=gg(b,c,d,a,m[i+12],20,-1926607734);
+    a=hh(a,b,c,d,m[i+5],4,-378558);d=hh(d,a,b,c,m[i+8],11,-2022574463);c=hh(c,d,a,b,m[i+11],16,1839030562);b=hh(b,c,d,a,m[i+14],23,-35309556);
+    a=hh(a,b,c,d,m[i+1],4,-1530992060);d=hh(d,a,b,c,m[i+4],11,1272893353);c=hh(c,d,a,b,m[i+7],16,-155497632);b=hh(b,c,d,a,m[i+10],23,-1094730640);
+    a=hh(a,b,c,d,m[i+13],4,681279174);d=hh(d,a,b,c,m[i],11,-358537222);c=hh(c,d,a,b,m[i+3],16,-722521979);b=hh(b,c,d,a,m[i+6],23,76029189);
+    a=hh(a,b,c,d,m[i+9],4,-640364487);d=hh(d,a,b,c,m[i+12],11,-421815835);c=hh(c,d,a,b,m[i+15],16,530742520);b=hh(b,c,d,a,m[i+2],23,-995338651);
+    a=ii(a,b,c,d,m[i],6,-198630844);d=ii(d,a,b,c,m[i+7],10,1126891415);c=ii(c,d,a,b,m[i+14],15,-1416354905);b=ii(b,c,d,a,m[i+5],21,-57434055);
+    a=ii(a,b,c,d,m[i+12],6,1700485571);d=ii(d,a,b,c,m[i+3],10,-1894986606);c=ii(c,d,a,b,m[i+10],15,-1051523);b=ii(b,c,d,a,m[i+1],21,-2054922799);
+    a=ii(a,b,c,d,m[i+8],6,1873313359);d=ii(d,a,b,c,m[i+15],10,-30611744);c=ii(c,d,a,b,m[i+6],15,-1560198380);b=ii(b,c,d,a,m[i+13],21,1309151649);
+    a=ii(a,b,c,d,m[i+4],6,-145523070);d=ii(d,a,b,c,m[i+11],10,-1120210379);c=ii(c,d,a,b,m[i+2],15,718787259);b=ii(b,c,d,a,m[i+9],21,-343485551);
+    st[0]=safeAdd(a,a0);st[1]=safeAdd(b,b0);st[2]=safeAdd(c,c0);st[3]=safeAdd(d,d0);
+  }
+  return st.map(n=>n.toString(16).padStart(8,'0').match(/.{2}/g).reverse().join('')).join('');
+}
+
+function getHash(){return localStorage.getItem(HASH_KEY)||DEFAULT_HASH}
+function getUser(){return localStorage.getItem(USER_KEY)||'admin'}
+
+// ═══════════════════════════════════════════════════
+// ДЕФОЛТНОЕ МЕНЮ
+// ═══════════════════════════════════════════════════
+const DEFAULT_MENU = {
+  categories:[
+    {id:'starters',name:'Закуски'},
+    {id:'mains',name:'Основные блюда'},
+    {id:'desserts',name:'Десерты'},
+    {id:'drinks',name:'Напитки'}
+  ],
+  items:[
+    {id:1,category:'starters',name:'Брускетта с авокадо и креветкой',desc:'Свежий хлеб, домашний авокадо-крем, тигровая креветка',price:590,image:'images/bruschetta.jpg'},
+    {id:2,category:'starters',name:'Тартар из говядины с соусом «Маттака»',desc:'Мясо выдержанное, соус из японского майонеза, васаби и кунжута',price:750,image:'images/main.jpg'},
+    {id:3,category:'mains',name:'Форель на гриле с сезонными овощами',desc:'Свежая форель, запечённые овощи, соус из цитрусов',price:1290,image:'images/min.jpg'},
+    {id:4,category:'mains',name:'Стейк из говядины «Рибай»',desc:'Выдержанный стейк, картофельное пюре, красное вино-соус',price:1890,image:'images/man.jpg'},
+    {id:5,category:'desserts',name:'Классическое тирамису',desc:'Маскарпоне, эспрессо, какао, печенье «Савоярди»',price:490,image:'images/sin.jpg'},
+    {id:6,category:'desserts',name:'Нью-Йорк чизкейк с ягодным соусом',desc:'Плотный сырный корж, свежие ягоды, домашний соус',price:550,image:'images/san.jpg'},
+    {id:7,category:'drinks',name:'Авторский кофе от местной обжарки',desc:'Эфиопия, Йиргачеффе, фильтр или эспрессо',price:350,image:'images/vin.jpg'},
+    {id:8,category:'drinks',name:'Коктейль «Цитрус & Травы»',desc:'Джин, лайм, базилик, медовый сироп, тоник',price:650,image:'images/van.jpg'}
+  ]
+};
+
+let menuCache = null;
+
+function getMenu(){return menuCache || JSON.parse(JSON.stringify(DEFAULT_MENU))}
+
+async function saveMenu(m){
+  menuCache = m;
+  await db.collection('menu').doc('main').set(Object.assign({},m,{updatedAt:firebase.firestore.FieldValue.serverTimestamp()}));
+}
+
+async function loadMenuFromCloud(){
+  try{
+    const snap = await db.collection('menu').doc('main').get();
+    if(snap.exists){menuCache=snap.data();}
+    else{
+      await db.collection('menu').doc('main').set(Object.assign({},DEFAULT_MENU,{updatedAt:firebase.firestore.FieldValue.serverTimestamp()}));
+      menuCache=JSON.parse(JSON.stringify(DEFAULT_MENU));
+    }
+  }catch(e){
+    console.warn('Firebase menu:',e);
+    menuCache=JSON.parse(JSON.stringify(DEFAULT_MENU));
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// ВХОД / ВЫХОД
+// ═══════════════════════════════════════════════════
+function doLogin(){
+  const u=document.getElementById('lu').value.trim();
+  const p=document.getElementById('lp').value;
+  const h=md5(p);
+  if(u===getUser()&&h===getHash()){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('admin-screen').style.display='block';
+    document.getElementById('logoutBtn').style.display='inline-block';
+    initAdmin();
+  }else{
+    document.getElementById('login-err').style.display='block';
+  }
+}
+
+function doLogout(){
+  document.getElementById('admin-screen').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('logoutBtn').style.display='none';
+  document.getElementById('lp').value='';
+  document.getElementById('login-err').style.display='none';
+}
+
+function changePwd(){
+  const o=document.getElementById('po').value;
+  const n=document.getElementById('pn').value;
+  const n2=document.getElementById('pn2').value;
+  const ok=document.getElementById('pwd-ok');
+  const er=document.getElementById('pwd-err');
+  ok.style.display='none';er.style.display='none';
+  if(md5(o)!==getHash()){er.textContent='Текущий пароль неверен';er.style.display='block';return}
+  if(n.length<6){er.textContent='Минимум 6 символов';er.style.display='block';return}
+  if(n!==n2){er.textContent='Пароли не совпадают';er.style.display='block';return}
+  localStorage.setItem(HASH_KEY,md5(n));
+  ['po','pn','pn2'].forEach(id=>{document.getElementById(id).value=''});
+  ok.style.display='block';
+  setTimeout(()=>{ok.style.display='none'},3000);
+}
+
+// ═══════════════════════════════════════════════════
+// ИНИЦИАЛИЗАЦИЯ АДМИНКИ
+// ═══════════════════════════════════════════════════
+async function initAdmin(){
+  await loadMenuFromCloud();
+  renderStats();renderFilters();renderTable();renderCats();fillCatSelects();
+  loadBookings();
+  loadOrders();
+}
+
+function switchTab(name,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════
+// XSS ЗАЩИТА
+// ═══════════════════════════════════════════════════
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+// ═══════════════════════════════════════════════════
+// РЕНДЕР ТАБЛИЦЫ МЕНЮ
+// ═══════════════════════════════════════════════════
+function renderStats(){
+  const m=getMenu();
+  const pr=m.items.map(i=>i.price);
+  const data=[
+    {num:m.items.length,lbl:'Блюд в меню'},
+    {num:m.categories.length,lbl:'Категорий'},
+    {num:m.items.filter(i=>i.category==='mains').length,lbl:'Основных блюд'},
+    {num:pr.length?Math.min(...pr)+' – '+Math.max(...pr):'-',lbl:'Диапазон цен'}
+  ];
+  document.getElementById('stats').innerHTML=data.map(s=>'<div class="stat"><div class="num">'+s.num+'</div><div class="lbl">'+s.lbl+'</div></div>').join('');
+}
+
+function renderFilters(){
+  const m=getMenu();
+  document.getElementById('fcat').innerHTML='<option value="">Все категории</option>'+m.categories.map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join('');
+}
+
+function renderTable(){
+  const m=getMenu();
+  const q=(document.getElementById('srch').value||'').toLowerCase();
+  const cat=document.getElementById('fcat').value;
+  let items=m.items;
+  if(q)items=items.filter(i=>i.name.toLowerCase().includes(q));
+  if(cat)items=items.filter(i=>i.category===cat);
+  const cm={};m.categories.forEach(c=>{cm[c.id]=c.name});
+  document.getElementById('items-tb').innerHTML=items.map(i=>{
+    const img=i.image
+      ?'<img src="'+esc(i.image)+'" style="width:52px;height:52px;object-fit:cover;border-radius:8px" onerror="this.style.display=\'none\'">'
+      :'<div style="width:52px;height:52px;background:#f0ebe3;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px">🍽</div>';
+    return '<tr><td>'+img+'</td><td><b>'+esc(i.name)+'</b><br><small style="color:#999">'+esc((i.desc||'').slice(0,55))+'</small></td>'+
+      '<td><span class="tag">'+esc(cm[i.category]||i.category)+'</span></td>'+
+      '<td><b style="color:#d4a574">'+i.price.toLocaleString('ru')+' ₽</b></td>'+
+      '<td><button class="btn-edit" onclick="editItem('+i.id+')">✏ Изм</button><button class="btn-del" onclick="delItem('+i.id+')">✕ Удал</button></td></tr>';
+  }).join('');
+}
+
+function fillCatSelects(){
+  const m=getMenu();
+  const opts=m.categories.map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join('');
+  document.getElementById('ac').innerHTML=opts;
+}
+
+function renderCats(){
+  const m=getMenu();
+  document.getElementById('cats-list').innerHTML='<table><thead><tr><th>ID</th><th>Название</th><th>Блюд</th><th>Удалить</th></tr></thead><tbody>'+
+    m.categories.map(c=>'<tr><td><code style="background:#fff9f3;padding:2px 7px;border-radius:4px;color:#d4a574">'+c.id+'</code></td>'+
+      '<td>'+esc(c.name)+'</td><td>'+m.items.filter(i=>i.category===c.id).length+'</td>'+
+      '<td><button class="btn-del" onclick="delCat(\''+c.id+'\')">Удалить</button></td></tr>'
+    ).join('')+'</tbody></table>';
+}
+
+// ═══════════════════════════════════════════════════
+// РЕДАКТИРОВАНИЕ БЛЮД
+// ═══════════════════════════════════════════════════
+let editId=null;
+
+function editItem(id){
+  const m=getMenu();
+  const item=m.items.find(i=>i.id==id);
+  if(!item)return;
+  editId=id;
+  document.getElementById('edit-form').innerHTML=
+    '<div class="fr"><div class="fl"><label>Название *</label><input id="en" value="'+esc(item.name)+'"></div>'+
+    '<div class="fl"><label>Категория</label><select id="ec">'+m.categories.map(c=>'<option value="'+c.id+'"'+(c.id===item.category?' selected':'')+'>'+esc(c.name)+'</option>').join('')+'</select></div></div>'+
+    '<div class="fr full"><div class="fl"><label>Описание</label><textarea id="ed">'+esc(item.desc||'')+'</textarea></div></div>'+
+    '<div class="fr"><div class="fl"><label>Цена *</label><input type="number" id="ep" value="'+item.price+'"></div>'+
+    '<div class="fl"><label>Фото</label>'+
+    '<div style="display:flex;gap:7px;align-items:center">'+
+    '<input id="ei" value="'+esc(item.image||'')+'" style="flex:1" placeholder="URL фото">'+
+    '<label for="eif" class="upbtn" id="eubtn">📷</label>'+
+    '<input type="file" id="eif" accept="image/*" style="display:none" onchange="uploadImg(this,\'ei\',\'eubtn\',\'eprev\')"></div>'+
+    '<div class="preview" id="eprev"'+(item.image?' style="display:block"':'')+'>'+
+    '<img src="'+esc(item.image||'')+'" onerror="this.style.display=\'none\'"></div></div></div>';
+  document.getElementById('edit-bg').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function closeEdit(){
+  document.getElementById('edit-bg').classList.remove('open');
+  document.body.style.overflow='';
+  editId=null;
+}
+
+async function saveEdit(){
+  const m=getMenu();
+  const item=m.items.find(i=>i.id==editId);
+  if(!item)return;
+  const name=document.getElementById('en').value.trim();
+  const price=parseInt(document.getElementById('ep').value);
+  if(!name||isNaN(price)){alert('Заполните название и цену');return}
+  item.name=name;
+  item.category=document.getElementById('ec').value;
+  item.desc=document.getElementById('ed').value.trim();
+  item.price=price;
+  item.image=document.getElementById('ei').value.trim();
+  await saveMenu(m);
+  closeEdit();renderTable();renderStats();
+  alert('✓ Блюдо обновлено!');
+}
+
+async function delItem(id){
+  const m=getMenu();
+  const item=m.items.find(i=>i.id==id);
+  if(!confirm('Удалить «'+item.name+'»?'))return;
+  m.items=m.items.filter(i=>i.id!=id);
+  await saveMenu(m);
+  renderTable();renderStats();
+}
+
+async function addItem(){
+  const name=document.getElementById('an').value.trim();
+  const cat=document.getElementById('ac').value;
+  const desc=document.getElementById('ad').value.trim();
+  const price=parseInt(document.getElementById('ap').value);
+  const img=document.getElementById('ai').value.trim();
+  if(!name||!cat||isNaN(price)){alert('Заполните: название, категория, цена');return}
+  const m=getMenu();
+  const newId=Math.max(0,...m.items.map(i=>i.id))+1;
+  m.items.push({id:newId,category:cat,name,desc,price,image:img});
+  await saveMenu(m);
+  ['an','ad','ap','ai'].forEach(id=>{document.getElementById(id).value=''});
+  document.getElementById('aprev').style.display='none';
+  renderTable();renderStats();
+  const ok=document.getElementById('add-ok');
+  ok.style.display='block';
+  setTimeout(()=>{ok.style.display='none'},3000);
+}
+
+async function addCat(){
+  const id=document.getElementById('cid').value.trim().replace(/\s+/g,'_');
+  const name=document.getElementById('cname').value.trim();
+  if(!id||!name){alert('Заполните ID и название');return}
+  const m=getMenu();
+  if(m.categories.find(c=>c.id===id)){alert('Такой ID уже существует');return}
+  m.categories.push({id,name});
+  await saveMenu(m);
+  document.getElementById('cid').value='';
+  document.getElementById('cname').value='';
+  renderCats();renderFilters();fillCatSelects();renderStats();
+}
+
+async function delCat(id){
+  const m=getMenu();
+  const n=m.items.filter(i=>i.category===id).length;
+  if(!confirm('Удалить категорию? '+n+' блюд останутся без категории.'))return;
+  m.categories=m.categories.filter(c=>c.id!==id);
+  await saveMenu(m);
+  renderCats();renderFilters();renderStats();
+}
+
+// ═══════════════════════════════════════════════════
+// БРОНИРОВАНИЯ
+// ═══════════════════════════════════════════════════
+function loadBookings(){
+  const st=document.getElementById('bk-status');
+  const tb=document.getElementById('bk-tb');
+  db.collection('bookings').orderBy('createdAt','desc').onSnapshot(snap=>{
+    const bks=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+    st.textContent='✓ Firebase подключён. Бронирований: '+bks.length;
+    st.style.color='#27ae60';
+    if(!bks.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:#999">Бронирований пока нет</td></tr>';return}
+    tb.innerHTML=bks.map(b=>{
+      const dt=b.createdAt&&b.createdAt.seconds?new Date(b.createdAt.seconds*1000).toLocaleString('ru-RU'):'-';
+      return '<tr><td style="font-size:12px">'+dt+'</td><td><b>'+esc(b.name||'-')+'</b></td><td>'+esc(b.phone||'-')+'</td><td>'+esc(b.email||'-')+'</td><td>'+esc(b.date||'-')+'</td><td>'+esc(b.time||'-')+'</td><td>'+esc(b.guests||'-')+'</td><td style="font-size:12px">'+esc(b.comment||'')+'</td></tr>';
+    }).join('');
+  },err=>{
+    st.textContent='⚠ Ошибка Firebase: '+err.message;
+    st.style.color='#c0392b';
+    tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:#c0392b">Ошибка загрузки</td></tr>';
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// ЗАКАЗЫ
+// ═══════════════════════════════════════════════════
+function statusLabel(s){
+  if(s==='paid')return '<span class="status-paid">Оплачен</span>';
+  if(s==='done')return '<span class="status-done">Выполнен</span>';
+  return '<span class="status-new">Новый</span>';
+}
+
+function loadOrders(){
+  const st=document.getElementById('ord-status');
+  const tb=document.getElementById('ord-tb');
+  db.collection('orders').orderBy('createdAt','desc').onSnapshot(snap=>{
+    const orders=snap.docs.map(d=>Object.assign({id:d.id},d.data()));
+    st.textContent='✓ Firebase подключён. Заказов: '+orders.length;
+    st.style.color='#27ae60';
+    if(!orders.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:#999">Заказов пока нет</td></tr>';return}
+    tb.innerHTML=orders.map(o=>{
+      const dt=o.createdAt&&o.createdAt.seconds?new Date(o.createdAt.seconds*1000).toLocaleString('ru-RU'):'-';
+      const items=(o.items||[]).map(i=>esc(i.name)+' x'+(i.qty||1)).join(', ');
+      const type=o.type==='takeaway'?'Самовывоз':'В ресторане';
+      return '<tr><td style="font-size:12px">'+dt+'</td><td><b>'+esc(o.name||'-')+'</b></td><td>'+esc(o.phone||'-')+'</td>'+
+        '<td>'+type+'<br><small>'+esc(o.paymentLabel||o.payment||'-')+'</small></td>'+
+        '<td style="font-size:12px">'+items+'</td>'+
+        '<td><b style="color:#d4a574">'+(o.total||0).toLocaleString('ru')+' ₽</b></td>'+
+        '<td>'+statusLabel(o.status)+'</td></tr>';
+    }).join('');
+  },err=>{
+    st.textContent='⚠ Ошибка Firebase: '+err.message;
+    st.style.color='#c0392b';
+    tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:#c0392b">Ошибка загрузки</td></tr>';
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// ЗАГРУЗКА ФОТО НА IMGBB
+// ═══════════════════════════════════════════════════
+async function uploadImg(fileInput,imgId,btnId,prevId){
+  const file=fileInput.files[0];
+  if(!file)return;
+  const btn=document.getElementById(btnId);
+  const orig=btn.textContent||btn.innerHTML;
+  btn.textContent='⏳...';
+  btn.style.pointerEvents='none';
+  try{
+    const formData=new FormData();
+    formData.append('image',file);
+    const resp=await fetch('https://api.imgbb.com/1/upload?key='+IMGBB_API_KEY,{method:'POST',body:formData});
+    const json=await resp.json();
+    if(!json.success)throw new Error(json.error&&json.error.message?json.error.message:'Ошибка imgbb');
+    const url=json.data.url;
+    document.getElementById(imgId).value=url;
+    const prev=document.getElementById(prevId);
+    if(prev){
+      prev.style.display='block';
+      let img=prev.querySelector('img');
+      if(!img){img=document.createElement('img');prev.appendChild(img)}
+      img.src=url;
+      img.style.display='block';
+    }
+    btn.textContent='✓ Готово';
+    btn.style.background='#27ae60';
+    setTimeout(()=>{btn.innerHTML=orig;btn.style.background='';btn.style.pointerEvents=''},2500);
+  }catch(e){
+    btn.textContent='✗ Ошибка';
+    btn.style.background='#c0392b';
+    setTimeout(()=>{btn.innerHTML=orig;btn.style.background='';btn.style.pointerEvents=''},3000);
+    alert('Ошибка загрузки фото:\n'+e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// ЗАМЕНА ФОТО САЙТА
+// ═══════════════════════════════════════════════════
+async function replacePhoto(key,input,prevId){
+  const file=input.files[0];
+  if(!file)return;
+  const prev=document.getElementById(prevId);
+  prev.style.opacity='0.4';
+
+  try{
+    const formData=new FormData();
+    formData.append('image',file);
+    const resp=await fetch('https://api.imgbb.com/1/upload?key='+IMGBB_API_KEY,{method:'POST',body:formData});
+    const json=await resp.json();
+    if(!json.success)throw new Error(json.error&&json.error.message?json.error.message:'Ошибка imgbb');
+    const url=json.data.url;
+    // Сохраняем URL в Firebase
+    await db.collection('sitePhotos').doc(key).set({url:url,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    prev.src=url;
+    prev.style.opacity='1';
+    alert('✓ Фото обновлено! Обновите страницу сайта чтобы увидеть изменения.');
+  }catch(e){
+    prev.style.opacity='1';
+    alert('Ошибка загрузки: '+e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// КЛАВИШИ
+// ═══════════════════════════════════════════════════
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape')closeEdit();
+});
+</script>
+</body>
+</html>
